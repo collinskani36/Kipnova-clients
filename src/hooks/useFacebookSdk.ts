@@ -13,6 +13,7 @@ export default function useFacebookSdk() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    // SDK already loaded
     if (window.FB) {
       setReady(true);
       return;
@@ -21,14 +22,12 @@ export default function useFacebookSdk() {
     window.fbAsyncInit = function () {
       window.FB.init({
         appId: APP_ID,
-
-        cookie: true,
-
-        xfbml: false,
-
-        version: "v24.0",
+        autoLogAppEvents: true,
+        xfbml: true,
+        version: "v26.0",
       });
 
+      console.log("✅ Facebook SDK initialized");
       setReady(true);
     };
 
@@ -38,12 +37,10 @@ export default function useFacebookSdk() {
       const js = document.createElement("script");
 
       js.id = id;
-
       js.src = "https://connect.facebook.net/en_US/sdk.js";
-
       js.async = true;
-
       js.defer = true;
+      js.crossOrigin = "anonymous";
 
       document.body.appendChild(js);
     }
