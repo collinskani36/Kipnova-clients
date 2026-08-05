@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import Landing from "./pages/Landing";
 import EmbeddedSignup from "./pages/EmbeddedSignup";
-import Login from "./pages/Login";
+import Login from "./pages/login";
 
 export default function App() {
   return (
