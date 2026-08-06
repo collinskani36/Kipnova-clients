@@ -392,14 +392,14 @@ export default function Dashboard() {
 
         {/* ── Sidebar ── */}
         <aside className={`sidebar${sidebarCollapsed ? " collapsed" : ""}${mobileOpen ? " mobile-open" : ""}`}>
-          <div className="sidebar-toggle" onClick={() => setSidebarCollapsed((v) => !v)}>
-            <span className="sidebar-toggle-text">{sidebarCollapsed ? "Expand" : "Collapse"}</span>
-            <span className="toggle-icon">{sidebarCollapsed ? "▶" : "◀"}</span>
-          </div>
-
-          <div className="logo">
-            <h1>{headerLabel}</h1>
-            <p>Admin Dashboard</p>
+          <div className="sidebar-header">
+            <div className="logo">
+              <span className="logo-icon">🤖</span>
+              <div className="logo-text">
+                <h1>{headerLabel}</h1>
+                <p>Admin Dashboard</p>
+              </div>
+            </div>
           </div>
 
           <ul className="nav">
@@ -421,17 +421,35 @@ export default function Dashboard() {
                   key={s}
                   className={`nav-item${section === s ? " active" : ""}`}
                   onClick={() => { setSection(s); setMobileOpen(false); }}
+                  title={sidebarCollapsed ? labels[s] : undefined}
                 >
                   <span className="nav-icon">{icons[s]}</span>
-                  <span>{labels[s]}</span>
+                  <span className="nav-label">{labels[s]}</span>
                 </li>
               );
             })}
           </ul>
 
-          <a href="#" className="logout-link" onClick={(e) => { e.preventDefault(); handleLogout(); }}>
-            🚪 <span>Log Out</span>
-          </a>
+          <div className="sidebar-footer">
+            <a
+              href="#"
+              className="logout-link"
+              onClick={(e) => { e.preventDefault(); handleLogout(); }}
+              title={sidebarCollapsed ? "Log Out" : undefined}
+            >
+              <span className="nav-icon">🚪</span>
+              <span className="nav-label">Log Out</span>
+            </a>
+
+            <button
+              className="sidebar-collapse-btn"
+              onClick={() => setSidebarCollapsed((v) => !v)}
+              aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              <span className="collapse-arrow">{sidebarCollapsed ? "▶" : "◀"}</span>
+            </button>
+          </div>
         </aside>
 
         {/* ── Main content ── */}
