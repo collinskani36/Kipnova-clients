@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { GraduationCap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { auth } from "../config/firebase";
@@ -161,6 +162,7 @@ export default function Dashboard() {
     applyClientBranding().then(() => {
       loadStats();
       loadWaStatus();
+      loadConversations(); // load on mount so sidebar recents are always available
       setAppReady(true);
     });
 
@@ -394,7 +396,7 @@ export default function Dashboard() {
         <aside className={`sidebar${sidebarCollapsed ? " collapsed" : ""}${mobileOpen ? " mobile-open" : ""}`}>
           <div className="sidebar-header">
             <div className="logo">
-              <span className="logo-icon">🤖</span>
+              <GraduationCap className="logo-cap-icon" size={22} strokeWidth={2} />
               <div className="logo-text">
                 <h1>{headerLabel}</h1>
                 <p>Admin Dashboard</p>
@@ -429,6 +431,33 @@ export default function Dashboard() {
               );
             })}
           </ul>
+
+          {/* ── Recents ── */}
+          {!sidebarCollapsed && conversations.length > 0 && (
+            <div className="sidebar-recents">
+              <div className="sidebar-recents-label">Recents</div>
+              {conversations.slice(0, 5).map((conv) => (
+                <div
+                  key={conv.phone}
+                  className="sidebar-recent-item"
+                  onClick={() => {
+                    viewConversation(conv.phone, conv.name);
+                    setMobileOpen(false);
+                  }}
+                >
+                  <div className="sidebar-recent-avatar">{getInitials(conv.name)}</div>
+                  <div className="sidebar-recent-info">
+                    <div className="sidebar-recent-name">{conv.name}</div>
+                    <div className="sidebar-recent-preview">
+                      {conv.lastMessage
+                        ? conv.lastMessage.content.replace(/[*_~`]/g, "").substring(0, 35)
+                        : "No messages yet"}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="sidebar-footer">
             <a
@@ -595,7 +624,8 @@ export default function Dashboard() {
               <h2>All Inquiries</h2>
               <p>Complete inquiry history grouped by {contactLabel.toLowerCase()}</p>
             </div>
-            <div className="table-container">
+            {/* Desktop table */}
+            <div className="table-container inquiry-table-desktop">
               <table>
                 <thead>
                   <tr>
@@ -630,6 +660,41 @@ export default function Dashboard() {
                   })}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile card list */}
+            <div className="inquiry-cards-mobile">
+              {inquiriesLoading ? (
+                <div className="loading"><div className="spinner" /><p>Loading inquiries…</p></div>
+              ) : groupedInquiries().length === 0 ? (
+                <div className="empty-state"><div className="empty-state-icon">📝</div><p>No inquiries yet</p></div>
+              ) : groupedInquiries().map((group) => {
+                const latest = group.inquiries[0];
+                const time = latest.createdAt
+                  ? new Date(latest.createdAt._seconds * 1000).toLocaleString()
+                  : "Unknown";
+                const badgeType = latest.inquiryType || "general";
+                return (
+                  <div
+                    key={group.phone}
+                    className="conversation-item"
+                    onClick={() => viewCustomerInquiries(group.phone, group.name)}
+                  >
+                    <div className="conversation-avatar">{getInitials(group.name)}</div>
+                    <div className="conversation-info">
+                      <div className="conversation-header">
+                        <span className="conversation-name">{group.name}</span>
+                        <span className="inquiry-count" style={{ marginLeft: 0 }}>{group.inquiries.length}</span>
+                      </div>
+                      <div className="conversation-preview">
+                        <span className="preview-text">{group.phone}</span>
+                        <span className="inquiry-badge" style={getBadgeStyle(badgeType)}>{badgeType}</span>
+                      </div>
+                      <div style={{ fontSize: "0.72rem", color: "var(--text-dim)", marginTop: "0.2rem" }}>{time}</div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
