@@ -1,4 +1,12 @@
 {
+  "redirects": [
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "login.kipnovatech.co.ke" }],
+      "destination": "https://onboarding.kipnovatech.co.ke/login",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/(.*)",
