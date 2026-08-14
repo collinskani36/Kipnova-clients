@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "../styles/EmbeddedSignup.css";
 
 import useFacebookSdk from "../hooks/useFacebookSdk";
@@ -9,12 +10,10 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://app.kipnovatech
 
 export default function EmbeddedSignup() {
   const sdkReady = useFacebookSdk();
+  const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
-
   const [status, setStatus] = useState("");
-
-  const [done, setDone] = useState(false);
 
   async function handleSignup() {
     if (!sdkReady) {
@@ -78,8 +77,12 @@ export default function EmbeddedSignup() {
       }
 
       console.log("✅ Exchange successful:", exchangeData);
-      setDone(true);
-      setStatus("Your WhatsApp Business account is now connected to Kipnova!");
+
+      // ── Onboarding complete — go straight to the dashboard ───────────────
+      // phoneNumberId is now saved in Firestore so the dashboard guard
+      // will pass and the client lands on their overview immediately.
+      navigate("/dashboard", { replace: true });
+      // ─────────────────────────────────────────────────────────────────────
     } catch (err) {
       console.error(err);
       alert("Embedded Signup cancelled or failed.");
@@ -87,22 +90,6 @@ export default function EmbeddedSignup() {
     } finally {
       setLoading(false);
     }
-  }
-
-  // Success screen shown after exchange completes
-  if (done) {
-    return (
-      <div className="es-page">
-        <div className="panel">
-          <div className="badge">Connected ✓</div>
-          <h1>You're all set!</h1>
-          <p>
-            Your WhatsApp Business account has been successfully connected to
-            Kipnova. You can now close this page or head to your dashboard.
-          </p>
-        </div>
-      </div>
-    );
   }
 
   return (

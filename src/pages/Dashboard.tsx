@@ -51,6 +51,7 @@ interface Inquiry {
 }
 
 interface BrandingConfig {
+  phoneNumberId?: string;
   dashboard?: {
     title?: string;
     headerLabel?: string;
@@ -186,6 +187,17 @@ export default function Dashboard() {
       const res = await apiFetch(`${API_BASE}/api/dashboard-config`);
       if (!res.ok) return;
       const cfg: BrandingConfig = await res.json();
+
+      // ── Onboarding guard ──────────────────────────────────────────────────
+      // If phoneNumberId is missing, this client hasn't completed Embedded
+      // Signup yet. Send them there now so they connect their WhatsApp account
+      // before accessing the dashboard.
+      if (!cfg.phoneNumberId) {
+        navigate("/embedded-signup", { replace: true });
+        return;
+      }
+      // ─────────────────────────────────────────────────────────────────────
+
       if (!cfg.dashboard) return;
 
       if (cfg.categoryLabels) setCategoryLabels(cfg.categoryLabels);
