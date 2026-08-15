@@ -1,4 +1,3 @@
-
 import React from "react";
 import "../styles/Landing.css";
 
@@ -23,7 +22,10 @@ export default function Landing() {
           </p>
 
           <div className="buttons">
-            <a href="/embedded-signup" className="primary">Get Started</a>
+            {/* Get Started now goes to /login first — the client must be
+                authenticated before reaching the Embedded Signup page so
+                their Meta token is saved to the correct Firebase client. */}
+            <a href="/login" className="primary">Get Started</a>
             <a href="/login" className="secondary">Existing Client</a>
           </div>
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/EmbeddedSignup.css";
 
@@ -14,6 +14,25 @@ export default function EmbeddedSignup() {
 
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
+  const [authChecked, setAuthChecked] = useState(false);
+
+  // ── Auth guard ────────────────────────────────────────────────────────────
+  // Wait for Firebase to resolve the current session before rendering anything.
+  // If no user is logged in, redirect straight to /login so the client
+  // authenticates first — this ensures their Meta token is saved to the
+  // correct Firebase clientId and no unauthenticated visitor can reach this page.
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (!user) {
+        // Not logged in — send to login, then come back here after
+        navigate("/login?redirect=/embedded-signup", { replace: true });
+      } else {
+        setAuthChecked(true);
+      }
+    });
+    return () => unsubscribe();
+  }, [navigate]);
+  // ─────────────────────────────────────────────────────────────────────────
 
   async function handleSignup() {
     if (!sdkReady) {
@@ -49,6 +68,7 @@ export default function EmbeddedSignup() {
       const currentUser = auth.currentUser;
       if (!currentUser) {
         alert("You are not logged in. Please log in and try again.");
+        navigate("/login?redirect=/embedded-signup", { replace: true });
         return;
       }
       const idToken = await currentUser.getIdToken();
@@ -90,6 +110,12 @@ export default function EmbeddedSignup() {
     } finally {
       setLoading(false);
     }
+  }
+
+  // Show nothing while Firebase resolves the auth state — prevents a flash
+  // of the signup page before the redirect kicks in for unauthenticated users.
+  if (!authChecked) {
+    return null;
   }
 
   return (

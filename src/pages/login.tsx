@@ -14,6 +14,11 @@ export default function Login() {
 
   const unauthorizedError = searchParams.get("error") === "unauthorized";
 
+  // If the auth guard on another page sent the user here with a redirect
+  // param (e.g. /login?redirect=/embedded-signup), honour it after login
+  // so the client lands exactly where they were trying to go.
+  const redirectTo = searchParams.get("redirect") || null;
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -27,7 +32,9 @@ export default function Login() {
       if (claims.role === "superadmin") {
         navigate("/superadmin", { replace: true });
       } else if (claims.clientId) {
-        navigate("/dashboard", { replace: true });
+        // If a redirect was requested (e.g. from the embedded signup guard),
+        // honour it — otherwise fall through to the dashboard as normal.
+        navigate(redirectTo || "/dashboard", { replace: true });
       } else {
         // Signed in but no role assigned — contact Kanito
         await auth.signOut();
