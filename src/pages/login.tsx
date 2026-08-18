@@ -16,27 +16,45 @@ export default function Login() {
   const unauthorizedError = searchParams.get("error") === "unauthorized";
   const redirectTo = searchParams.get("redirect") || null;
 
-  // If Firebase already has a saved session, skip login entirely
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const tokenResult = await user.getIdTokenResult();
-        const claims = tokenResult.claims as Record<string, unknown>;
+    let cancelled = false;
 
-        if (claims.role === "superadmin") {
-          navigate("/superadmin", { replace: true });
-        } else if (claims.clientId) {
-          navigate(redirectTo || "/dashboard", { replace: true });
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      if (cancelled) return;
+
+      try {
+        if (user) {
+          const tokenResult = await user.getIdTokenResult();
+          if (cancelled) return;
+
+          const claims = tokenResult.claims as Record<string, unknown>;
+
+          if (claims.role === "superadmin") {
+            navigate("/superadmin", { replace: true });
+          } else if (claims.clientId) {
+            navigate(redirectTo || "/dashboard", { replace: true });
+          } else {
+            setChecking(false);
+          }
         } else {
-          // Logged in but no role — show login form so they can use a proper account
           setChecking(false);
         }
-      } else {
-        setChecking(false);
+      } catch {
+        // If anything fails (network, token), just show the login form
+        if (!cancelled) setChecking(false);
       }
     });
 
-    return () => unsub();
+    // Safety net — if Firebase takes more than 5 seconds, show login form anyway
+    const timeout = setTimeout(() => {
+      if (!cancelled) setChecking(false);
+    }, 5000);
+
+    return () => {
+      cancelled = true;
+      unsub();
+      clearTimeout(timeout);
+    };
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -59,7 +77,11 @@ export default function Login() {
       }
     } catch (err: unknown) {
       const code = (err as { code?: string }).code;
-      if (code === "auth/invalid-credential" || code === "auth/wrong-password" || code === "auth/user-not-found") {
+      if (
+        code === "auth/invalid-credential" ||
+        code === "auth/wrong-password" ||
+        code === "auth/user-not-found"
+      ) {
         setError("Invalid email or password.");
       } else {
         setError("Sign in failed. Please try again.");
@@ -69,11 +91,17 @@ export default function Login() {
     }
   };
 
-  // Show nothing while checking saved session — avoids flash of login form
   if (checking) {
     return (
-      <div className="login-page">
-        <div style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.9rem" }}>Loading…</div>
+      <div className="login-page" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{
+          width: 36, height: 36,
+          border: "3px solid rgba(255,255,255,0.15)",
+          borderTopColor: "#3b82f6",
+          borderRadius: "50%",
+          animation: "spin 0.8s linear infinite"
+        }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
