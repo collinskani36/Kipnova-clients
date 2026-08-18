@@ -17,7 +17,7 @@ export default defineConfig({
         display: "standalone",
         orientation: "portrait",
         scope: "/",
-        start_url: "/",
+        start_url: "/login",
         icons: [
           {
             src: "nova-icon-192.png",
@@ -38,9 +38,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // Cache the app shell and static assets
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
-        // Network-first for API calls — never serve stale data
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\.kipnovatech\.co\.ke\/api\//,
@@ -49,7 +47,7 @@ export default defineConfig({
               cacheName: "nova-api-cache",
               expiration: {
                 maxEntries: 50,
-                maxAgeSeconds: 5 * 60, // 5 minutes
+                maxAgeSeconds: 5 * 60,
               },
               networkTimeoutSeconds: 10,
             },
@@ -57,7 +55,7 @@ export default defineConfig({
         ],
       },
       devOptions: {
-        enabled: false, // keep dev clean; PWA only active in production build
+        enabled: false,
       },
     }),
   ],

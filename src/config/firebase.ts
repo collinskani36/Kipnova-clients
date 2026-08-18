@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
 
 // Public Firebase Web config — intentionally client-safe.
 // The real secret (service account) lives only in Render env vars.
@@ -14,3 +14,6 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
+
+// Keep user logged in across app restarts — credentials saved in localStorage
+setPersistence(auth, browserLocalPersistence);

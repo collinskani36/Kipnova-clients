@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 import { auth } from "../config/firebase";
 import "../styles/Login.css";
 
@@ -9,15 +9,35 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   const unauthorizedError = searchParams.get("error") === "unauthorized";
-
-  // If the auth guard on another page sent the user here with a redirect
-  // param (e.g. /login?redirect=/embedded-signup), honour it after login
-  // so the client lands exactly where they were trying to go.
   const redirectTo = searchParams.get("redirect") || null;
+
+  // If Firebase already has a saved session, skip login entirely
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const tokenResult = await user.getIdTokenResult();
+        const claims = tokenResult.claims as Record<string, unknown>;
+
+        if (claims.role === "superadmin") {
+          navigate("/superadmin", { replace: true });
+        } else if (claims.clientId) {
+          navigate(redirectTo || "/dashboard", { replace: true });
+        } else {
+          // Logged in but no role — show login form so they can use a proper account
+          setChecking(false);
+        }
+      } else {
+        setChecking(false);
+      }
+    });
+
+    return () => unsub();
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,11 +52,8 @@ export default function Login() {
       if (claims.role === "superadmin") {
         navigate("/superadmin", { replace: true });
       } else if (claims.clientId) {
-        // If a redirect was requested (e.g. from the embedded signup guard),
-        // honour it — otherwise fall through to the dashboard as normal.
         navigate(redirectTo || "/dashboard", { replace: true });
       } else {
-        // Signed in but no role assigned — contact Kanito
         await auth.signOut();
         setError("Your account has no client assigned. Contact your administrator.");
       }
@@ -52,11 +69,20 @@ export default function Login() {
     }
   };
 
+  // Show nothing while checking saved session — avoids flash of login form
+  if (checking) {
+    return (
+      <div className="login-page">
+        <div style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.9rem" }}>Loading…</div>
+      </div>
+    );
+  }
+
   return (
     <div className="login-page">
       <div className="login-card">
         <div className="login-header">
-          <h1>Kipnova</h1>
+          <h1>Nova</h1>
           <p>Client Dashboard</p>
         </div>
 
