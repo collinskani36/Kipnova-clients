@@ -15,5 +15,5 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
-// Keep user logged in across app restarts — credentials saved in localStorage
-setPersistence(auth, browserLocalPersistence);
+// Fire and forget — don't block app startup
+setPersistence(auth, browserLocalPersistence).catch(console.error);
