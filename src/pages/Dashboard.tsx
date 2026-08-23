@@ -1045,7 +1045,7 @@ export default function Dashboard() {
                 <textarea
                   className="chat-reply-input"
                   rows={1}
-                  placeholder="Type a message… (sending takes over from the AI)"
+                  placeholder="Type message..(sending takes over from the AI)"
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
                   onKeyDown={(e) => {
