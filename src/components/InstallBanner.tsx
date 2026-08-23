@@ -1,15 +1,14 @@
+import { usePWAInstall } from "../hooks/usePWAInstall";
+
 interface InstallBannerProps {
   businessName: string;
   clientId: string;
   primaryColor?: string;
-  // Hoisted from Dashboard so the hook runs on first render,
-  // before branding loads, ensuring beforeinstallprompt is never missed.
-  showBanner: boolean;
-  onInstall: () => void;
-  onDismiss: () => void;
 }
 
-export default function InstallBanner({ businessName, primaryColor, showBanner, onInstall, onDismiss }: InstallBannerProps) {
+export default function InstallBanner({ businessName, clientId, primaryColor }: InstallBannerProps) {
+  const { install, dismiss, showBanner } = usePWAInstall(businessName, clientId);
+
   if (!showBanner) return null;
 
   const accentColor = primaryColor || "#2563eb";
@@ -47,7 +46,7 @@ export default function InstallBanner({ businessName, primaryColor, showBanner, 
       </div>
       <div style={{ display: "flex", gap: "0.5rem", flexShrink: 0 }}>
         <button
-          onClick={onDismiss}
+          onClick={dismiss}
           style={{
             background: "transparent",
             border: "1px solid rgba(255,255,255,0.12)",
@@ -61,7 +60,7 @@ export default function InstallBanner({ businessName, primaryColor, showBanner, 
           Not now
         </button>
         <button
-          onClick={onInstall}
+          onClick={install}
           style={{
             background: accentColor,
             border: "none",

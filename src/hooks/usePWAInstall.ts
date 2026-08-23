@@ -14,8 +14,6 @@ export function usePWAInstall(businessName?: string, clientId?: string) {
   const promptRef = useRef<BeforeInstallPromptEvent | null>(null);
 
   // ── 1. Capture beforeinstallprompt as early as possible ──────────────────
-  // This effect runs on mount with no dependencies so it always registers
-  // immediately — regardless of whether branding has loaded yet.
   useEffect(() => {
     if (window.matchMedia("(display-mode: standalone)").matches) {
       setIsInstalled(true);
@@ -25,27 +23,17 @@ export function usePWAInstall(businessName?: string, clientId?: string) {
     const handler = (e: Event) => {
       e.preventDefault();
       promptRef.current = e as BeforeInstallPromptEvent;
-      // If branding is already available by the time this fires, unlock now.
-      // Otherwise Effect 2 below will unlock once branding arrives.
-      if (businessName && clientId) {
-        const dismissKey = `pwa-dismissed-${clientId}`;
-        if (!localStorage.getItem(dismissKey)) {
-          setReady(true);
-        }
-      }
+      // If branding is already loaded by the time this fires, mark ready now
+      if (businessName && clientId) setReady(true);
     };
 
-    const installedHandler = () => setIsInstalled(true);
-
     window.addEventListener("beforeinstallprompt", handler);
-    window.addEventListener("appinstalled", installedHandler);
+    window.addEventListener("appinstalled", () => setIsInstalled(true));
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handler);
-      window.removeEventListener("appinstalled", installedHandler);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // intentionally empty — must register on first render
+  }, []);
 
   // ── 2. When businessName/clientId arrive, check dismissed + unlock banner ─
   useEffect(() => {
