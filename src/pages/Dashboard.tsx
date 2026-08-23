@@ -980,7 +980,7 @@ export default function Dashboard() {
           <div className="chat-modal-wrapper">
             <div className="chat-modal-topbar">
               <h2>Conversation Details</h2>
-              <button className="btn btn-secondary" onClick={() => setChatOpen(false)}>Close</button>
+              <button className="chat-modal-close-btn" onClick={() => setChatOpen(false)} aria-label="Close">✕</button>
             </div>
             <div className="chat-container">
               <div className="chat-header">
@@ -1045,7 +1045,7 @@ export default function Dashboard() {
                 <textarea
                   className="chat-reply-input"
                   rows={1}
-                  placeholder="Type message…(sending takes over from the AI)"
+                  placeholder="Type a message… (sending takes over from the AI)"
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
                   onKeyDown={(e) => {
