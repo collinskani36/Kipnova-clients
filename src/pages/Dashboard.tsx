@@ -1057,7 +1057,7 @@ export default function Dashboard() {
                   onInput={(e) => {
                     const el = e.currentTarget;
                     el.style.height = "auto";
-                    el.style.height = el.scrollHeight + "px";
+                    el.style.height = Math.min(el.scrollHeight, 120) + "px";
                   }}
                 />
                 <button
