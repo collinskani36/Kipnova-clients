@@ -1,29 +1,30 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
-export function usePWAInstall() {
-  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+export function usePWAInstall(businessName?: string, clientId?: string) {
   const [isInstalled, setIsInstalled] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
+  const [ready, setReady] = useState(false);
 
+  // Hold the deferred prompt in a ref so capturing it never causes a re-render
+  const promptRef = useRef<BeforeInstallPromptEvent | null>(null);
+
+  // ── 1. Capture beforeinstallprompt as early as possible ──────────────────
   useEffect(() => {
-    // Already installed — running in standalone mode
     if (window.matchMedia("(display-mode: standalone)").matches) {
       setIsInstalled(true);
       return;
     }
 
-    // Check if user previously dismissed the prompt
-    const dismissed = localStorage.getItem("nova-install-dismissed");
-    if (dismissed) setIsDismissed(true);
-
     const handler = (e: Event) => {
       e.preventDefault();
-      setInstallPrompt(e as BeforeInstallPromptEvent);
+      promptRef.current = e as BeforeInstallPromptEvent;
+      // If branding is already loaded by the time this fires, mark ready now
+      if (businessName && clientId) setReady(true);
     };
 
     window.addEventListener("beforeinstallprompt", handler);
@@ -34,23 +35,41 @@ export function usePWAInstall() {
     };
   }, []);
 
+  // ── 2. When businessName/clientId arrive, check dismissed + unlock banner ─
+  useEffect(() => {
+    if (!businessName || !clientId) return;
+
+    const dismissKey = `pwa-dismissed-${clientId}`;
+    if (localStorage.getItem(dismissKey)) {
+      setIsDismissed(true);
+      return;
+    }
+
+    // Prompt may already be captured before branding loaded
+    if (promptRef.current) setReady(true);
+  }, [businessName, clientId]);
+
+  // ── Actions ───────────────────────────────────────────────────────────────
+
   const install = async () => {
-    if (!installPrompt) return;
-    await installPrompt.prompt();
-    const result = await installPrompt.userChoice;
+    if (!promptRef.current) return;
+    await promptRef.current.prompt();
+    const result = await promptRef.current.userChoice;
     if (result.outcome === "accepted") {
       setIsInstalled(true);
-      setInstallPrompt(null);
+      promptRef.current = null;
+      setReady(false);
     }
   };
 
   const dismiss = () => {
-    localStorage.setItem("nova-install-dismissed", "true");
+    if (!clientId) return;
+    localStorage.setItem(`pwa-dismissed-${clientId}`, "true");
     setIsDismissed(true);
+    setReady(false);
   };
 
-  // Show banner if: prompt is available, not installed, not dismissed
-  const showBanner = !!installPrompt && !isInstalled && !isDismissed;
+  const showBanner = ready && !isInstalled && !isDismissed;
 
   return { install, dismiss, showBanner, isInstalled };
 }

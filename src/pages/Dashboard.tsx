@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { auth } from "../config/firebase";
 import { apiFetch, API_BASE } from "../config/api";
+import InstallBanner from "../components/InstallBanner";
 import "../styles/Dashboard.css";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -74,6 +75,8 @@ interface IntakeSession {
 
 interface BrandingConfig {
   phoneNumberId?: string;
+  businessName?:  string;
+  clientId?:      string;
   dashboard?: {
     title?: string;
     headerLabel?: string;
@@ -156,6 +159,11 @@ export default function Dashboard() {
   const [contactLabel, setContactLabel] = useState("Customer");
   const [categoryLabels, setCategoryLabels] = useState<Record<string, string>>({});
   const [intakeFlow, setIntakeFlow] = useState<BrandingConfig["intakeFlow"]>(null);
+
+  // PWA install — populated after branding loads
+  const [pwaBusinessName, setPwaBusinessName] = useState("");
+  const [pwaClientId, setPwaClientId] = useState("");
+  const [pwaPrimaryColor, setPwaPrimaryColor] = useState("");
 
   // Overview data
   const [stats, setStats] = useState<Stats | null>(null);
@@ -249,6 +257,29 @@ export default function Dashboard() {
         });
       }
       if (cfg.contactLabel) setContactLabel(cfg.contactLabel);
+
+      // ── PWA: swap manifest to tenant-specific one, then unlock install banner
+      const businessName = cfg.businessName || "";
+      const clientId     = cfg.clientId || "";
+      const primaryColor = cfg.dashboard.colors?.["primary"] || "";
+
+      if (businessName && clientId) {
+        // Swap <link rel="manifest"> so the OS installs with the tenant's name
+        const existing = document.querySelector('link[rel="manifest"]');
+        if (existing) existing.remove();
+        const link = document.createElement("link");
+        link.rel  = "manifest";
+        // Auth token is passed as a query param because <link> tags can't
+        // carry Authorization headers — the backend must accept it this way
+        const token = await auth.currentUser?.getIdToken();
+        link.href = `${API_BASE}/api/manifest?token=${token}`;
+        document.head.appendChild(link);
+
+        // Unlock the install banner now that we know who this tenant is
+        setPwaBusinessName(businessName);
+        setPwaClientId(clientId);
+        setPwaPrimaryColor(primaryColor);
+      }
     } catch {
       // Branding unavailable — use defaults, still render
     }
@@ -973,6 +1004,15 @@ export default function Dashboard() {
           </div>
         </main>
       </div>
+
+      {/* ── PWA Install Banner — shown after branding loads, never on login ── */}
+      {pwaBusinessName && (
+        <InstallBanner
+          businessName={pwaBusinessName}
+          clientId={pwaClientId}
+          primaryColor={pwaPrimaryColor}
+        />
+      )}
 
       {/* ── Chat Modal ── */}
       {chatOpen && (

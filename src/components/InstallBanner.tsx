@@ -1,9 +1,17 @@
 import { usePWAInstall } from "../hooks/usePWAInstall";
 
-export default function InstallBanner() {
-  const { install, dismiss, showBanner } = usePWAInstall();
+interface InstallBannerProps {
+  businessName: string;
+  clientId: string;
+  primaryColor?: string;
+}
+
+export default function InstallBanner({ businessName, clientId, primaryColor }: InstallBannerProps) {
+  const { install, dismiss, showBanner } = usePWAInstall(businessName, clientId);
 
   if (!showBanner) return null;
+
+  const accentColor = primaryColor || "#2563eb";
 
   return (
     <div style={{
@@ -25,12 +33,12 @@ export default function InstallBanner() {
     }}>
       <img
         src="/nova-icon-192.png"
-        alt="Nova"
+        alt={businessName}
         style={{ width: 40, height: 40, borderRadius: "10px", flexShrink: 0 }}
       />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ color: "#fff", fontWeight: 600, fontSize: "0.9rem", lineHeight: 1.2 }}>
-          Install Nova
+          Install {businessName}
         </div>
         <div style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.78rem", marginTop: "0.15rem" }}>
           Add to your home screen for quick access
@@ -54,7 +62,7 @@ export default function InstallBanner() {
         <button
           onClick={install}
           style={{
-            background: "linear-gradient(135deg, #2563eb, #06b6d4)",
+            background: accentColor,
             border: "none",
             color: "#fff",
             borderRadius: "0.5rem",

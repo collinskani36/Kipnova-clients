@@ -6,40 +6,36 @@ import Login from "./pages/login";
 import Dashboard from "./pages/Dashboard";
 import Superadmin from "./pages/Superadmin";
 import ProtectedRoute from "./components/ProtectedRoute";
-import InstallBanner from "./components/InstallBanner";
 
 export default function App() {
   return (
     <BrowserRouter>
-      <>
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/embedded-signup" element={<EmbeddedSignup />} />
-          <Route path="/login" element={<Login />} />
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/embedded-signup" element={<EmbeddedSignup />} />
+        <Route path="/login" element={<Login />} />
 
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute requiredRole="admin">
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/superadmin"
-            element={
-              <ProtectedRoute requiredRole="superadmin">
-                <Superadmin />
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/superadmin"
+          element={
+            <ProtectedRoute requiredRole="superadmin">
+              <Superadmin />
+            </ProtectedRoute>
+          }
+        />
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-
-        <InstallBanner />
-      </>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </BrowserRouter>
   );
 }
+
