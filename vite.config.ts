@@ -16,8 +16,8 @@ export default defineConfig({
         background_color: "#0f1117",
         display: "standalone",
         orientation: "portrait",
-        scope: "/login",
-        start_url: "/login",
+        scope: "/",
+        start_url: "/dashboard",
         icons: [
           {
             src: "nova-icon-192.png",
