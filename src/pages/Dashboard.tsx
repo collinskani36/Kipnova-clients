@@ -5,6 +5,7 @@ import { signOut } from "firebase/auth";
 import { auth } from "../config/firebase";
 import { apiFetch, API_BASE } from "../config/api";
 import InstallBanner from "../components/InstallBanner";
+import { usePWAInstall } from "../hooks/usePWAInstall";
 import "../styles/Dashboard.css";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -160,10 +161,12 @@ export default function Dashboard() {
   const [categoryLabels, setCategoryLabels] = useState<Record<string, string>>({});
   const [intakeFlow, setIntakeFlow] = useState<BrandingConfig["intakeFlow"]>(null);
 
-  // PWA install — populated after branding loads
+  // PWA install — state is lifted here so the hook runs on first render,
+  // before branding loads, ensuring beforeinstallprompt is never missed.
   const [pwaBusinessName, setPwaBusinessName] = useState("");
   const [pwaClientId, setPwaClientId] = useState("");
   const [pwaPrimaryColor, setPwaPrimaryColor] = useState("");
+  const { install, dismiss, showBanner } = usePWAInstall(pwaBusinessName, pwaClientId);
 
   // Overview data
   const [stats, setStats] = useState<Stats | null>(null);
@@ -1005,14 +1008,19 @@ export default function Dashboard() {
         </main>
       </div>
 
-      {/* ── PWA Install Banner — shown after branding loads, never on login ── */}
-      {pwaBusinessName && (
-        <InstallBanner
-          businessName={pwaBusinessName}
-          clientId={pwaClientId}
-          primaryColor={pwaPrimaryColor}
-        />
-      )}
+      {/* ── PWA Install Banner ── */}
+      {/* The hook is hoisted into Dashboard (always mounted) so it captures */}
+      {/* beforeinstallprompt on first render, before branding loads.        */}
+      {/* showBanner is passed down; InstallBanner uses it instead of the    */}
+      {/* hook internally.                                                   */}
+      <InstallBanner
+        businessName={pwaBusinessName}
+        clientId={pwaClientId}
+        primaryColor={pwaPrimaryColor}
+        showBanner={showBanner}
+        onInstall={install}
+        onDismiss={dismiss}
+      />
 
       {/* ── Chat Modal ── */}
       {chatOpen && (
