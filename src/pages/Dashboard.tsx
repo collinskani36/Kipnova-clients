@@ -231,20 +231,34 @@ export default function Dashboard() {
   async function applyClientBranding() {
     try {
       const res = await apiFetch(`${API_BASE}/api/dashboard-config`);
-      if (!res.ok) return;
+      if (!res.ok) {
+        console.error("[Branding] dashboard-config request failed:", res.status);
+        return;
+      }
       const cfg: BrandingConfig = await res.json();
+      console.log("[Branding] cfg received:", {
+        clientId:     cfg.clientId,
+        businessName: cfg.businessName,
+        phoneNumberId: cfg.phoneNumberId,
+        hasDashboard: !!cfg.dashboard,
+        hasColors:    !!cfg.dashboard?.colors,
+      });
 
       // ── Onboarding guard ──────────────────────────────────────────────────
       // If phoneNumberId is missing, this client hasn't completed Embedded
       // Signup yet. Send them there now so they connect their WhatsApp account
       // before accessing the dashboard.
       if (!cfg.phoneNumberId) {
+        console.warn("[Branding] No phoneNumberId — redirecting to embedded-signup");
         navigate("/embedded-signup", { replace: true });
         return;
       }
       // ─────────────────────────────────────────────────────────────────────
 
-      if (!cfg.dashboard) return;
+      if (!cfg.dashboard) {
+        console.warn("[Branding] No dashboard config in response");
+        return;
+      }
 
       if (cfg.categoryLabels) setCategoryLabels(cfg.categoryLabels);
       if (cfg.intakeFlow)     setIntakeFlow(cfg.intakeFlow);
@@ -263,6 +277,8 @@ export default function Dashboard() {
       const clientId     = cfg.clientId || "";
       const primaryColor = cfg.dashboard.colors?.["primary"] || "";
 
+      console.log("[PWA] branding values:", { businessName, clientId, primaryColor });
+
       if (businessName && clientId) {
         // Swap <link rel="manifest"> so the OS installs with the tenant's name
         const existing = document.querySelector('link[rel="manifest"]');
@@ -274,14 +290,18 @@ export default function Dashboard() {
         const token = await auth.currentUser?.getIdToken();
         link.href = `${API_BASE}/api/manifest?token=${token}`;
         document.head.appendChild(link);
+        console.log("[PWA] manifest swapped to:", link.href.split("?")[0]);
 
         // Unlock the install banner now that we know who this tenant is
         setPwaBusinessName(businessName);
         setPwaClientId(clientId);
         setPwaPrimaryColor(primaryColor);
+        console.log("[PWA] banner unlocked for:", businessName);
+      } else {
+        console.warn("[PWA] banner NOT unlocked — missing businessName or clientId:", { businessName, clientId });
       }
-    } catch {
-      // Branding unavailable — use defaults, still render
+    } catch (err) {
+      console.error("[Branding] applyClientBranding threw:", err);
     }
   }
 
