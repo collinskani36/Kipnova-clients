@@ -5,26 +5,45 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
+declare global {
+  interface Window {
+    __pwaPrompt: BeforeInstallPromptEvent | null;
+  }
+}
+
 export function usePWAInstall(businessName?: string, clientId?: string) {
   const [isInstalled, setIsInstalled] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
   const [ready, setReady] = useState(false);
 
-  // Hold the deferred prompt in a ref so capturing it never causes a re-render
   const promptRef = useRef<BeforeInstallPromptEvent | null>(null);
 
-  // ── 1. Capture beforeinstallprompt as early as possible ──────────────────
+  // ── 1. Capture prompt — read global first, then keep listener for late fires
   useEffect(() => {
     if (window.matchMedia("(display-mode: standalone)").matches) {
+      console.log("[PWA] Already installed — standalone mode");
       setIsInstalled(true);
       return;
     }
 
+    // Pick up prompt captured globally in index.html before React mounted
+    if (window.__pwaPrompt) {
+      console.log("[PWA] Prompt found in window.__pwaPrompt");
+      promptRef.current = window.__pwaPrompt;
+    } else {
+      console.log("[PWA] No prompt in window.__pwaPrompt yet");
+    }
+
+    // Keep listener in case it fires after React mounts
     const handler = (e: Event) => {
+      console.log("[PWA] beforeinstallprompt fired after React mount");
       e.preventDefault();
       promptRef.current = e as BeforeInstallPromptEvent;
-      // If branding is already loaded by the time this fires, mark ready now
-      if (businessName && clientId) setReady(true);
+      window.__pwaPrompt = e as BeforeInstallPromptEvent;
+      if (businessName && clientId) {
+        console.log("[PWA] Branding already loaded — setting ready");
+        setReady(true);
+      }
     };
 
     window.addEventListener("beforeinstallprompt", handler);
@@ -35,21 +54,29 @@ export function usePWAInstall(businessName?: string, clientId?: string) {
     };
   }, []);
 
-  // ── 2. When businessName/clientId arrive, check dismissed + unlock banner ─
+  // ── 2. When businessName + clientId arrive, check dismissed and unlock banner
   useEffect(() => {
-    if (!businessName || !clientId) return;
+    if (!businessName || !clientId) {
+      console.log("[PWA] Waiting for branding — businessName:", businessName, "clientId:", clientId);
+      return;
+    }
+
+    console.log("[PWA] Branding loaded —", businessName, clientId);
 
     const dismissKey = `pwa-dismissed-${clientId}`;
     if (localStorage.getItem(dismissKey)) {
+      console.log("[PWA] Previously dismissed for", clientId);
       setIsDismissed(true);
       return;
     }
 
-    // Prompt may already be captured before branding loaded
-    if (promptRef.current) setReady(true);
+    if (promptRef.current) {
+      console.log("[PWA] Prompt available — showing banner");
+      setReady(true);
+    } else {
+      console.log("[PWA] Prompt NOT available — banner will not show");
+    }
   }, [businessName, clientId]);
-
-  // ── Actions ───────────────────────────────────────────────────────────────
 
   const install = async () => {
     if (!promptRef.current) return;

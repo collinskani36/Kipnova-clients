@@ -33,6 +33,14 @@
         rel="stylesheet"
     />
 
+  <script>
+    window.__pwaPrompt = null;
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault();
+      window.__pwaPrompt = e;
+      console.log('[PWA] beforeinstallprompt captured globally');
+    });
+  </script>
 </head>
 
 <body>
