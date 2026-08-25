@@ -15,9 +15,11 @@ export default defineConfig({
         theme_color: "#0f1117",
         background_color: "#0f1117",
         display: "standalone",
+        display_override: ["standalone", "minimal-ui", "browser"],
         orientation: "portrait",
-        scope: "/",           // ← was "/login" — that was scoping the PWA too narrowly
-        start_url: "/login",  // still fine as the entry point
+        scope: "/",
+        start_url: "/login",
+        id: "/login",
         icons: [
           {
             src: "nova-icon-192.png",
