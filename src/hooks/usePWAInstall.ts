@@ -1,3 +1,16 @@
+// ─── usePWAInstall ────────────────────────────────────────────────────────────
+// Manages the PWA install prompt for "Nova — powered by Kipnova".
+//
+// Strategy:
+//   - index.html captures beforeinstallprompt into window.__pwaPrompt BEFORE
+//     React mounts, so we never miss it.
+//   - This hook reads that global on mount, and also listens for the rare case
+//     it fires after React loads.
+//   - showBanner becomes true as soon as the prompt is available and the user
+//     hasn't dismissed or already installed.
+//   - No manifest swapping — the static Vite manifest is the one the browser
+//     evaluated, so we leave it alone.
+
 import { useState, useEffect, useRef } from "react";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -11,92 +24,81 @@ declare global {
   }
 }
 
-export function usePWAInstall(businessName?: string, clientId?: string) {
+const DISMISS_KEY = "nova-pwa-dismissed";
+
+export function usePWAInstall() {
   const [isInstalled, setIsInstalled] = useState(false);
-  const [isDismissed, setIsDismissed] = useState(false);
-  const [ready, setReady] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(
+    () => !!localStorage.getItem(DISMISS_KEY)
+  );
+  const [promptReady, setPromptReady] = useState(false);
 
   const promptRef = useRef<BeforeInstallPromptEvent | null>(null);
 
-  // ── 1. Capture prompt — read global first, then keep listener for late fires
   useEffect(() => {
+    // Already running as installed PWA — nothing to show
     if (window.matchMedia("(display-mode: standalone)").matches) {
       console.log("[PWA] Already installed — standalone mode");
       setIsInstalled(true);
       return;
     }
 
-    // Pick up prompt captured globally in index.html before React mounted
+    // Pick up prompt captured by index.html before React mounted
     if (window.__pwaPrompt) {
-      console.log("[PWA] Prompt found in window.__pwaPrompt");
+      console.log("[PWA] Prompt found in window.__pwaPrompt on mount");
       promptRef.current = window.__pwaPrompt;
+      setPromptReady(true);
     } else {
-      console.log("[PWA] No prompt in window.__pwaPrompt yet");
+      console.log("[PWA] No prompt yet — listening for late fire");
     }
 
-    // Keep listener in case it fires after React mounts
+    // Listen for the rare case it fires after React mounts
     const handler = (e: Event) => {
       console.log("[PWA] beforeinstallprompt fired after React mount");
       e.preventDefault();
       promptRef.current = e as BeforeInstallPromptEvent;
       window.__pwaPrompt = e as BeforeInstallPromptEvent;
-      if (businessName && clientId) {
-        console.log("[PWA] Branding already loaded — setting ready");
-        setReady(true);
-      }
+      setPromptReady(true);
     };
 
     window.addEventListener("beforeinstallprompt", handler);
-    window.addEventListener("appinstalled", () => setIsInstalled(true));
+    window.addEventListener("appinstalled", () => {
+      console.log("[PWA] App installed");
+      setIsInstalled(true);
+      setPromptReady(false);
+    });
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handler);
     };
   }, []);
 
-  // ── 2. When businessName + clientId arrive, check dismissed and unlock banner
-  useEffect(() => {
-    if (!businessName || !clientId) {
-      console.log("[PWA] Waiting for branding — businessName:", businessName, "clientId:", clientId);
-      return;
-    }
-
-    console.log("[PWA] Branding loaded —", businessName, clientId);
-
-    const dismissKey = `pwa-dismissed-${clientId}`;
-    if (localStorage.getItem(dismissKey)) {
-      console.log("[PWA] Previously dismissed for", clientId);
-      setIsDismissed(true);
-      return;
-    }
-
-    if (promptRef.current) {
-      console.log("[PWA] Prompt available — showing banner");
-      setReady(true);
-    } else {
-      console.log("[PWA] Prompt NOT available — banner will not show");
-    }
-  }, [businessName, clientId]);
-
   const install = async () => {
-    if (!promptRef.current) return;
-    await promptRef.current.prompt();
-    const result = await promptRef.current.userChoice;
-    if (result.outcome === "accepted") {
-      setIsInstalled(true);
-      promptRef.current = null;
-      setReady(false);
+    if (!promptRef.current) {
+      console.warn("[PWA] install() called but no prompt available");
+      return;
+    }
+    try {
+      await promptRef.current.prompt();
+      const result = await promptRef.current.userChoice;
+      console.log("[PWA] User choice:", result.outcome);
+      if (result.outcome === "accepted") {
+        setIsInstalled(true);
+        promptRef.current = null;
+        setPromptReady(false);
+      }
+    } catch (err) {
+      console.error("[PWA] prompt() threw:", err);
     }
   };
 
   const dismiss = () => {
-    if (!clientId) return;
-    localStorage.setItem(`pwa-dismissed-${clientId}`, "true");
+    localStorage.setItem(DISMISS_KEY, "true");
     setIsDismissed(true);
-    setReady(false);
+    setPromptReady(false);
   };
 
-  const showBanner = ready && !isInstalled && !isDismissed;
+  const showBanner = promptReady && !isInstalled && !isDismissed;
 
-  return { install, dismiss, showBanner, isInstalled };
+  return { install, dismiss, showBanner };
 }

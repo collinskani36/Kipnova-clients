@@ -1,17 +1,13 @@
+// ─── InstallBanner ────────────────────────────────────────────────────────────
+// Shows a floating install prompt for "Nova — powered by Kipnova".
+// No props needed — the hook manages everything internally.
+
 import { usePWAInstall } from "../hooks/usePWAInstall";
 
-interface InstallBannerProps {
-  businessName: string;
-  clientId: string;
-  primaryColor?: string;
-}
-
-export default function InstallBanner({ businessName, clientId, primaryColor }: InstallBannerProps) {
-  const { install, dismiss, showBanner } = usePWAInstall(businessName, clientId);
+export default function InstallBanner() {
+  const { install, dismiss, showBanner } = usePWAInstall();
 
   if (!showBanner) return null;
-
-  const accentColor = primaryColor || "#2563eb";
 
   return (
     <div style={{
@@ -33,15 +29,15 @@ export default function InstallBanner({ businessName, clientId, primaryColor }: 
     }}>
       <img
         src="/nova-icon-192.png"
-        alt={businessName}
+        alt="Nova"
         style={{ width: 40, height: 40, borderRadius: "10px", flexShrink: 0 }}
       />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ color: "#fff", fontWeight: 600, fontSize: "0.9rem", lineHeight: 1.2 }}>
-          Install {businessName}
+          Install Nova
         </div>
         <div style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.78rem", marginTop: "0.15rem" }}>
-          Add to your home screen for quick access
+          Powered by Kipnova · Add to home screen
         </div>
       </div>
       <div style={{ display: "flex", gap: "0.5rem", flexShrink: 0 }}>
@@ -62,7 +58,7 @@ export default function InstallBanner({ businessName, clientId, primaryColor }: 
         <button
           onClick={install}
           style={{
-            background: accentColor,
+            background: "#2563eb",
             border: "none",
             color: "#fff",
             borderRadius: "0.5rem",
