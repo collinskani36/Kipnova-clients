@@ -16,8 +16,8 @@ export default defineConfig({
         background_color: "#0f1117",
         display: "standalone",
         orientation: "portrait",
-        scope: "/login",
-        start_url: "/login",
+        scope: "/",           // ← was "/login" — that was scoping the PWA too narrowly
+        start_url: "/login",  // still fine as the entry point
         icons: [
           {
             src: "nova-icon-192.png",

@@ -6,6 +6,7 @@ import Login from "./pages/login";
 import Dashboard from "./pages/Dashboard";
 import Superadmin from "./pages/Superadmin";
 import ProtectedRoute from "./components/ProtectedRoute";
+import GuestRoute from "./components/GuestRoute";
 
 export default function App() {
   return (
@@ -13,7 +14,16 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/embedded-signup" element={<EmbeddedSignup />} />
-        <Route path="/login" element={<Login />} />
+
+        {/* /login: redirect to dashboard if already authenticated */}
+        <Route
+          path="/login"
+          element={
+            <GuestRoute>
+              <Login />
+            </GuestRoute>
+          }
+        />
 
         <Route
           path="/dashboard"
@@ -33,7 +43,8 @@ export default function App() {
           }
         />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* PWA fallback: unknown routes go to /login, not the landing page */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
   );
