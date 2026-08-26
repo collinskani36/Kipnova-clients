@@ -15,11 +15,10 @@ export default defineConfig({
         theme_color: "#0f1117",
         background_color: "#0f1117",
         display: "standalone",
-        display_override: ["standalone", "minimal-ui", "browser"],
         orientation: "portrait",
         scope: "/",
-        start_url: "/login",
-        id: "/login",
+        start_url: "/dashboard",
+        id: "/dashboard",
         icons: [
           {
             src: "nova-icon-192.png",
@@ -68,3 +67,4 @@ export default defineConfig({
     host: true,
   },
 });
+
