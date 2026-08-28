@@ -13,6 +13,7 @@ interface Props {
   setMobileOpen: (v: boolean) => void;
   headerLabel: string;
   intakeFlow: BrandingConfig["intakeFlow"];
+  appointmentsFlow: BrandingConfig["appointmentsFlow"];
   conversations: Conversation[];
   viewConversation: (phone: string, name: string) => void;
   handleLogout: () => void;
@@ -22,7 +23,7 @@ export default function Sidebar({
   section, setSection,
   sidebarCollapsed, setSidebarCollapsed,
   mobileOpen, setMobileOpen,
-  headerLabel, intakeFlow,
+  headerLabel, intakeFlow, appointmentsFlow,
   conversations, viewConversation,
   handleLogout,
 }: Props) {
@@ -57,6 +58,7 @@ export default function Sidebar({
           </li>
         ))}
 
+        {/* Admissions — Stanford and any future intake clients */}
         {intakeFlow?.enabled && (
           <li
             className={`nav-item${section === "intake" ? " active" : ""}`}
@@ -65,6 +67,18 @@ export default function Sidebar({
           >
             <span className="nav-icon">{intakeFlow.tabIcon}</span>
             <span className="nav-label">{intakeFlow.tabLabel}</span>
+          </li>
+        )}
+
+        {/* Appointments — Johnny Motions and any future booking clients */}
+        {appointmentsFlow?.enabled && (
+          <li
+            className={`nav-item${section === "appointments" ? " active" : ""}`}
+            onClick={() => { setSection("appointments"); setMobileOpen(false); }}
+            title={sidebarCollapsed ? appointmentsFlow.tabLabel : undefined}
+          >
+            <span className="nav-icon">{appointmentsFlow.tabIcon}</span>
+            <span className="nav-label">{appointmentsFlow.tabLabel}</span>
           </li>
         )}
 
@@ -123,3 +137,4 @@ export default function Sidebar({
     </aside>
   );
 }
+

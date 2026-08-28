@@ -12,10 +12,12 @@ import OverviewSection       from "./dashboard/sections/OverviewSection";
 import ConversationsSection  from "./dashboard/sections/ConversationsSection";
 import InquiriesSection      from "./dashboard/sections/InquiriesSection";
 import IntakeSection         from "./dashboard/sections/IntakeSection";
+import AppointmentsSection   from "./dashboard/sections/AppointmentsSection";
 import AnalyticsSection      from "./dashboard/sections/AnalyticsSection";
 import ChatModal             from "./dashboard/modals/ChatModal";
 import InquiryModal          from "./dashboard/modals/InquiryModal";
 import ApplicantModal        from "./dashboard/modals/ApplicantModal";
+import AppointmentModal      from "./dashboard/modals/AppointmentModal";
 
 export default function Dashboard() {
   const db = useDashboard();
@@ -43,6 +45,7 @@ export default function Dashboard() {
           setMobileOpen={db.setMobileOpen}
           headerLabel={db.headerLabel}
           intakeFlow={db.intakeFlow}
+          appointmentsFlow={db.appointmentsFlow}
           conversations={db.conversations}
           viewConversation={db.viewConversation}
           handleLogout={db.handleLogout}
@@ -96,6 +99,15 @@ export default function Dashboard() {
             />
           )}
 
+          {db.section === "appointments" && db.appointmentsFlow?.enabled && (
+            <AppointmentsSection
+              appointmentsFlow={db.appointmentsFlow}
+              appointments={db.appointments}
+              appointmentsLoading={db.appointmentsLoading}
+              setAppointmentModal={db.setAppointmentModal}
+            />
+          )}
+
           {db.section === "analytics" && (
             <AnalyticsSection
               stats={db.stats}
@@ -142,6 +154,17 @@ export default function Dashboard() {
           intakeFlow={db.intakeFlow}
           getPrimaryLabel={db.getPrimaryLabel}
           fieldLabel={db.fieldLabel}
+        />
+      )}
+
+      {db.appointmentsFlow && (
+        <AppointmentModal
+          appointment={db.appointmentModal}
+          onClose={() => db.setAppointmentModal(null)}
+          appointmentsFlow={db.appointmentsFlow}
+          appointmentFieldLabel={db.appointmentFieldLabel}
+          updateAppointmentStatus={db.updateAppointmentStatus}
+          appointmentStatusUpdating={db.appointmentStatusUpdating}
         />
       )}
     </>

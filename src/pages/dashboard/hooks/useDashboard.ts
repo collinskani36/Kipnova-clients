@@ -7,6 +7,8 @@ import { useNavigate } from "react-router-dom";
 import { signOut, getAuth } from "firebase/auth";
 import { apiFetch, API_BASE } from "../../../config/api";
 import {
+  Appointment,
+  AppointmentStatus,
   BrandingConfig,
   Conversation,
   Inquiry,
@@ -32,6 +34,7 @@ export function useDashboard() {
   const [contactLabel, setContactLabel] = useState("Customer");
   const [categoryLabels, setCategoryLabels] = useState<Record<string, string>>({});
   const [intakeFlow, setIntakeFlow] = useState<BrandingConfig["intakeFlow"]>(null);
+  const [appointmentsFlow, setAppointmentsFlow] = useState<BrandingConfig["appointmentsFlow"]>(null);
 
   // ── PWA ─────────────────────────────────────────────────────────────────────
   // We no longer swap the manifest — one shared origin = one PWA ("Nova").
@@ -56,6 +59,12 @@ export function useDashboard() {
   const [admissionsLoading, setAdmissionsLoading] = useState(false);
   const [admissionsCount, setAdmissionsCount] = useState<{ total: number; complete: number } | null>(null);
   const [applicantModal, setApplicantModal] = useState<IntakeSession | null>(null);
+
+  // ── Appointments ────────────────────────────────────────────────────────────
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [appointmentsLoading, setAppointmentsLoading] = useState(false);
+  const [appointmentModal, setAppointmentModal] = useState<Appointment | null>(null);
+  const [appointmentStatusUpdating, setAppointmentStatusUpdating] = useState(false);
 
   // ── Chat modal ──────────────────────────────────────────────────────────────
   const [chatOpen, setChatOpen] = useState(false);
@@ -92,6 +101,7 @@ export function useDashboard() {
     if (section === "conversations") loadConversations();
     if (section === "inquiries")     loadInquiries();
     if (section === "intake")        loadAdmissions();
+    if (section === "appointments")  loadAppointments();
   }, [section]);
 
   useEffect(() => {
@@ -126,9 +136,10 @@ export function useDashboard() {
         return;
       }
 
-      if (cfg.categoryLabels) setCategoryLabels(cfg.categoryLabels);
-      if (cfg.intakeFlow)     setIntakeFlow(cfg.intakeFlow);
-      if (cfg.dashboard.title) document.title = cfg.dashboard.title;
+      if (cfg.categoryLabels)    setCategoryLabels(cfg.categoryLabels);
+      if (cfg.intakeFlow)        setIntakeFlow(cfg.intakeFlow);
+      if (cfg.appointmentsFlow)  setAppointmentsFlow(cfg.appointmentsFlow);
+      if (cfg.dashboard.title)       document.title = cfg.dashboard.title;
       if (cfg.dashboard.headerLabel) setHeaderLabel(cfg.dashboard.headerLabel);
       if (cfg.dashboard.colors) {
         const root = document.documentElement;
@@ -139,9 +150,6 @@ export function useDashboard() {
       if (cfg.contactLabel) setContactLabel(cfg.contactLabel);
 
       // ── PWA install banner ─────────────────────────────────────────────────
-      // The static Vite manifest ("Nova") is what the browser evaluated for
-      // installability — we leave it untouched so the captured beforeinstallprompt
-      // remains valid. Just unlock the banner now that the page is ready.
       setShowInstallBanner(true);
       console.log("[PWA] install banner unlocked");
     } catch (err) {
@@ -217,6 +225,49 @@ export function useDashboard() {
     }
   }
 
+  async function loadAppointments() {
+    setAppointmentsLoading(true);
+    try {
+      const res  = await apiFetch(`${API_BASE}/api/appointments`);
+      const data = await res.json();
+      // Each doc should arrive with its Firestore ID injected as `id` by the backend.
+      setAppointments(data.appointments || []);
+    } catch {
+      setAppointments([]);
+    } finally {
+      setAppointmentsLoading(false);
+    }
+  }
+
+  // ── Appointment status update ────────────────────────────────────────────────
+  // Optimistic: update local state immediately so the badge flips without
+  // waiting for a re-fetch, then persist to Firestore via the backend.
+  async function updateAppointmentStatus(id: string, status: AppointmentStatus) {
+    // Optimistic update
+    setAppointments((prev) =>
+      prev.map((a) => (a.id === id ? { ...a, status } : a))
+    );
+    if (appointmentModal?.id === id) {
+      setAppointmentModal((prev) => prev ? { ...prev, status } : prev);
+    }
+
+    setAppointmentStatusUpdating(true);
+    try {
+      const res = await apiFetch(`${API_BASE}/api/appointments/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      // Revert optimistic update on failure
+      alert("Could not update appointment status — please try again.");
+      loadAppointments();
+    } finally {
+      setAppointmentStatusUpdating(false);
+    }
+  }
+
   // ── Intake helpers ───────────────────────────────────────────────────────────
   function fieldLabel(key: string): string {
     if (intakeFlow?.fieldLabels?.[key]) return intakeFlow.fieldLabels[key];
@@ -230,6 +281,16 @@ export function useDashboard() {
     }
     const first = Object.values(session.collectedData)[0];
     return first || session.phone;
+  }
+
+  // ── Appointments helpers ─────────────────────────────────────────────────────
+  function appointmentFieldLabel(key: string): string {
+    if (appointmentsFlow?.fieldLabels?.[key]) return appointmentsFlow.fieldLabels[key];
+    // camelCase → Title Case fallback
+    return key
+      .replace(/([A-Z])/g, " $1")
+      .replace(/^./, (s) => s.toUpperCase())
+      .trim();
   }
 
   // ── Chat actions ────────────────────────────────────────────────────────────
@@ -352,7 +413,7 @@ export function useDashboard() {
     mobileOpen, setMobileOpen,
     appReady,
     // Branding
-    headerLabel, contactLabel, categoryLabels, intakeFlow,
+    headerLabel, contactLabel, categoryLabels, intakeFlow, appointmentsFlow,
     // PWA
     showInstallBanner,
     // Overview
@@ -364,6 +425,12 @@ export function useDashboard() {
     // Admissions
     admissions, admissionsLoading, admissionsCount,
     applicantModal, setApplicantModal,
+    // Appointments
+    appointments, appointmentsLoading,
+    appointmentModal, setAppointmentModal,
+    appointmentStatusUpdating,
+    updateAppointmentStatus,
+    appointmentFieldLabel,
     // Chat modal
     chatOpen, setChatOpen,
     chatPhone, chatName,

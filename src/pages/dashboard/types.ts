@@ -64,6 +64,24 @@ export interface IntakeSession {
   updatedAt?: { _seconds: number };
 }
 
+// ─── Appointments ─────────────────────────────────────────────────────────────
+
+export type AppointmentStatus = "pending" | "confirmed" | "cancelled";
+
+export interface Appointment {
+  id: string;                          // Firestore doc ID — injected by the loader
+  customerName: string;
+  customerPhone: string;
+  service: string;
+  branch: string;
+  requestedTime: string;               // raw string from customer, e.g. "Tomorrow 10am"
+  status: AppointmentStatus;
+  createdAt?: { _seconds: number };
+  clientId?: string;
+}
+
+// ─── Branding ─────────────────────────────────────────────────────────────────
+
 export interface BrandingConfig {
   phoneNumberId?: string;
   businessName?: string;
@@ -82,6 +100,19 @@ export interface BrandingConfig {
     entityLabel: string;
     fieldLabels: Record<string, string>;
   } | null;
+  appointmentsFlow?: {
+    enabled: boolean;
+    tabLabel: string;
+    tabIcon: string;
+    entityLabel: string;
+    fieldLabels: Record<string, string>;
+  } | null;
 }
 
-export type Section = "overview" | "conversations" | "inquiries" | "intake" | "analytics";
+export type Section =
+  | "overview"
+  | "conversations"
+  | "inquiries"
+  | "intake"
+  | "appointments"
+  | "analytics";
