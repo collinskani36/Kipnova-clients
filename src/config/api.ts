@@ -1,6 +1,6 @@
 import { auth } from "./firebase";
 
-export const API_BASE = "https://app.kipnovatech.co.ke";
+export const API_BASE = "https://appp.kipnovatech.co.ke";
 
 export async function apiFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const user = auth.currentUser;
