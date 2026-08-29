@@ -14,6 +14,7 @@ interface Props {
   headerLabel: string;
   intakeFlow: BrandingConfig["intakeFlow"];
   appointmentsFlow: BrandingConfig["appointmentsFlow"];
+  galleryFlow: BrandingConfig["galleryFlow"];
   conversations: Conversation[];
   viewConversation: (phone: string, name: string) => void;
   handleLogout: () => void;
@@ -23,7 +24,7 @@ export default function Sidebar({
   section, setSection,
   sidebarCollapsed, setSidebarCollapsed,
   mobileOpen, setMobileOpen,
-  headerLabel, intakeFlow, appointmentsFlow,
+  headerLabel, intakeFlow, appointmentsFlow, galleryFlow,
   conversations, viewConversation,
   handleLogout,
 }: Props) {
@@ -79,6 +80,18 @@ export default function Sidebar({
           >
             <span className="nav-icon">{appointmentsFlow.tabIcon}</span>
             <span className="nav-label">{appointmentsFlow.tabLabel}</span>
+          </li>
+        )}
+
+        {/* Gallery — dicks-eldoret and any future image-gallery clients */}
+        {galleryFlow?.enabled && (
+          <li
+            className={`nav-item${section === "gallery" ? " active" : ""}`}
+            onClick={() => { setSection("gallery"); setMobileOpen(false); }}
+            title={sidebarCollapsed ? galleryFlow.tabLabel : undefined}
+          >
+            <span className="nav-icon">{galleryFlow.tabIcon}</span>
+            <span className="nav-label">{galleryFlow.tabLabel}</span>
           </li>
         )}
 

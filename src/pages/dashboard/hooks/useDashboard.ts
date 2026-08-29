@@ -11,6 +11,7 @@ import {
   AppointmentStatus,
   BrandingConfig,
   Conversation,
+  GalleryImage,
   Inquiry,
   IntakeSession,
   Message,
@@ -35,6 +36,7 @@ export function useDashboard() {
   const [categoryLabels, setCategoryLabels] = useState<Record<string, string>>({});
   const [intakeFlow, setIntakeFlow] = useState<BrandingConfig["intakeFlow"]>(null);
   const [appointmentsFlow, setAppointmentsFlow] = useState<BrandingConfig["appointmentsFlow"]>(null);
+  const [galleryFlow, setGalleryFlow] = useState<BrandingConfig["galleryFlow"]>(null);
 
   // ── PWA ─────────────────────────────────────────────────────────────────────
   // We no longer swap the manifest — one shared origin = one PWA ("Nova").
@@ -65,6 +67,11 @@ export function useDashboard() {
   const [appointmentsLoading, setAppointmentsLoading] = useState(false);
   const [appointmentModal, setAppointmentModal] = useState<Appointment | null>(null);
   const [appointmentStatusUpdating, setAppointmentStatusUpdating] = useState(false);
+
+  // ── Gallery ─────────────────────────────────────────────────────────────────
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+  const [galleryLoading, setGalleryLoading] = useState(false);
+  const [galleryUploading, setGalleryUploading] = useState(false);
 
   // ── Chat modal ──────────────────────────────────────────────────────────────
   const [chatOpen, setChatOpen] = useState(false);
@@ -102,6 +109,7 @@ export function useDashboard() {
     if (section === "inquiries")     loadInquiries();
     if (section === "intake")        loadAdmissions();
     if (section === "appointments")  loadAppointments();
+    if (section === "gallery")       loadGallery();
   }, [section]);
 
   useEffect(() => {
@@ -139,6 +147,7 @@ export function useDashboard() {
       if (cfg.categoryLabels)    setCategoryLabels(cfg.categoryLabels);
       if (cfg.intakeFlow)        setIntakeFlow(cfg.intakeFlow);
       if (cfg.appointmentsFlow)  setAppointmentsFlow(cfg.appointmentsFlow);
+      if (cfg.galleryFlow)       setGalleryFlow(cfg.galleryFlow);
       if (cfg.dashboard.title)       document.title = cfg.dashboard.title;
       if (cfg.dashboard.headerLabel) setHeaderLabel(cfg.dashboard.headerLabel);
       if (cfg.dashboard.colors) {
@@ -236,6 +245,61 @@ export function useDashboard() {
       setAppointments([]);
     } finally {
       setAppointmentsLoading(false);
+    }
+  }
+
+  // ── Gallery ─────────────────────────────────────────────────────────────────
+
+  async function loadGallery() {
+    setGalleryLoading(true);
+    try {
+      const res = await apiFetch(`${API_BASE}/api/gallery`);
+      const data = await res.json();
+      setGalleryImages(data.images || []);
+    } catch {
+      setGalleryImages([]);
+    } finally {
+      setGalleryLoading(false);
+    }
+  }
+
+  async function uploadGalleryImage(file: File, slug: string, label: string) {
+    setGalleryUploading(true);
+    try {
+      const form = new FormData();
+      form.append("image", file);
+      form.append("slug", slug);
+      form.append("label", label);
+      const res = await apiFetch(`${API_BASE}/api/gallery/upload`, {
+        method: "POST",
+        body: form,
+        // No Content-Type header — browser sets it with the boundary automatically
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Upload failed" }));
+        alert(err.error || "Upload failed — please try again.");
+        return;
+      }
+      const data = await res.json();
+      // Prepend so the new image appears first (gallery is sorted newest-first)
+      setGalleryImages((prev) => [data.image, ...prev.filter((i) => i.slug !== data.image.slug)]);
+    } catch {
+      alert("Upload failed — please check your connection and try again.");
+    } finally {
+      setGalleryUploading(false);
+    }
+  }
+
+  async function deleteGalleryImage(slug: string) {
+    try {
+      const res = await apiFetch(`${API_BASE}/api/gallery/${slug}`, { method: "DELETE" });
+      if (!res.ok) {
+        alert("Could not delete image — please try again.");
+        return;
+      }
+      setGalleryImages((prev) => prev.filter((i) => i.slug !== slug));
+    } catch {
+      alert("Could not delete image — please try again.");
     }
   }
 
@@ -431,6 +495,10 @@ export function useDashboard() {
     appointmentStatusUpdating,
     updateAppointmentStatus,
     appointmentFieldLabel,
+    // Gallery
+    galleryFlow,
+    galleryImages, galleryLoading, galleryUploading,
+    uploadGalleryImage, deleteGalleryImage,
     // Chat modal
     chatOpen, setChatOpen,
     chatPhone, chatName,

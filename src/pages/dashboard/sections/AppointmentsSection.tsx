@@ -1,11 +1,7 @@
 // ─── AppointmentsSection ──────────────────────────────────────────────────────
-// Appointments tab — card grid with status filter row.
-// Premium feel: dark cards, gold accent, animated status badges.
-// Calendar integration hook-ready: the full Appointment object is passed
-// into AppointmentModal so future calendar/reminder wiring has everything it needs.
 
 import { useState } from "react";
-import { Appointment, AppointmentStatus } from "../../types";
+import { Appointment, AppointmentStatus } from "../types";
 
 interface Props {
   appointmentsFlow: {
@@ -48,7 +44,6 @@ export default function AppointmentsSection({
     ? appointments
     : appointments.filter((a) => a.status === filter);
 
-  // Counts for filter badges
   const counts: Record<Filter, number> = {
     all:       appointments.length,
     pending:   appointments.filter((a) => a.status === "pending").length,
@@ -57,52 +52,52 @@ export default function AppointmentsSection({
   };
 
   return (
-    <section className="appointments-section">
+    <section className="appt-section">
       {/* ── Header ── */}
-      <div className="appointments-header">
-        <div className="appointments-title-row">
-          <h2 className="appointments-heading">
-            {appointmentsFlow.tabIcon} {appointmentsFlow.tabLabel}
+      <div className="appt-section__header">
+        <div className="appt-section__title-row">
+          <h2 className="appt-section__heading">
+            {appointmentsFlow.tabIcon}&nbsp;{appointmentsFlow.tabLabel}
           </h2>
-          <span className="appointments-total-badge">{appointments.length}</span>
+          <span className="appt-section__total">{appointments.length}</span>
         </div>
-        <p className="appointments-subheading">
+        <p className="appt-section__sub">
           Manage and confirm customer bookings. Tap any card to update its status.
         </p>
       </div>
 
       {/* ── Filter tabs ── */}
-      <div className="appt-filter-row" role="tablist" aria-label="Filter appointments by status">
+      <div className="appt-filters" role="tablist">
         {STATUS_FILTERS.map(({ key, label }) => (
           <button
             key={key}
             role="tab"
             aria-selected={filter === key}
-            className={`appt-filter-btn appt-filter-btn--${key}${filter === key ? " active" : ""}`}
+            className={`appt-filter${filter === key ? " appt-filter--active" : ""} appt-filter--${key}`}
             onClick={() => setFilter(key)}
           >
-            {label}
-            <span className="appt-filter-count">{counts[key]}</span>
+            <span className="appt-filter__label">{label}</span>
+            <span className="appt-filter__count">{counts[key]}</span>
           </button>
         ))}
       </div>
 
       {/* ── Content ── */}
       {appointmentsLoading ? (
-        <div className="appointments-loading">
+        <div className="appt-loading">
           <div className="appt-spinner" />
           <span>Loading appointments…</span>
         </div>
       ) : visible.length === 0 ? (
-        <div className="appointments-empty">
-          <span className="appointments-empty-icon">📅</span>
-          <p className="appointments-empty-title">
+        <div className="appt-empty">
+          <span className="appt-empty__icon">📅</span>
+          <p className="appt-empty__title">
             {filter === "all"
               ? `No ${appointmentsFlow.entityLabel.toLowerCase()}s yet`
               : `No ${filter} appointments`}
           </p>
           {filter === "all" && (
-            <p className="appointments-empty-hint">
+            <p className="appt-empty__hint">
               Appointments are captured automatically when customers send{" "}
               <code>Appointment: [time]</code> on WhatsApp.
             </p>
@@ -130,52 +125,55 @@ interface CardProps {
   onClick: () => void;
 }
 
-const STATUS_META: Record<AppointmentStatus, { label: string; cls: string }> = {
-  pending:   { label: "Pending",   cls: "status--pending"   },
-  confirmed: { label: "Confirmed", cls: "status--confirmed" },
-  cancelled: { label: "Cancelled", cls: "status--cancelled" },
+const STATUS_META: Record<AppointmentStatus, { label: string }> = {
+  pending:   { label: "Pending"   },
+  confirmed: { label: "Confirmed" },
+  cancelled: { label: "Cancelled" },
 };
 
 function AppointmentCard({ appointment: a, onClick }: CardProps) {
   const meta = STATUS_META[a.status] ?? STATUS_META.pending;
 
   return (
-    <button className="appt-card" onClick={onClick} aria-label={`View appointment for ${a.customerName}`}>
-      {/* Status stripe */}
+    <button
+      className="appt-card"
+      onClick={onClick}
+      aria-label={`View appointment for ${a.customerName}`}
+    >
+      {/* Left status stripe */}
       <span className={`appt-card__stripe appt-card__stripe--${a.status}`} aria-hidden="true" />
 
       <div className="appt-card__body">
-        {/* Top row: name + status badge */}
+        {/* Row 1: name + status pill */}
         <div className="appt-card__top">
           <span className="appt-card__name">{a.customerName || a.customerPhone}</span>
-          <span className={`appt-status-badge ${meta.cls}`}>{meta.label}</span>
+          <span className={`appt-pill appt-pill--${a.status}`}>{meta.label}</span>
         </div>
 
-        {/* Service */}
-        {a.service && (
+        {/* Row 2: service (only if populated) */}
+        {a.service && a.service !== "service" && (
           <p className="appt-card__service">{a.service}</p>
         )}
 
-        {/* Time — most prominent field */}
+        {/* Row 3: time — most prominent */}
         <p className="appt-card__time">
-          <span className="appt-card__time-icon" aria-hidden="true">⏰</span>
+          <span aria-hidden="true">⏰</span>
           {a.requestedTime}
         </p>
 
-        {/* Footer: branch + booked-at */}
+        {/* Row 4: branch + booked-at */}
         <div className="appt-card__footer">
-          {a.branch && (
+          {a.branch && a.branch !== "branch" && (
             <span className="appt-card__branch">
-              <span aria-hidden="true">📍</span> {a.branch}
+              <span aria-hidden="true">📍</span>&nbsp;{a.branch}
             </span>
           )}
           {a.createdAt && (
-            <span className="appt-card__booked-at">
-              {formatTime(a.createdAt._seconds)}
-            </span>
+            <span className="appt-card__date">{formatTime(a.createdAt._seconds)}</span>
           )}
         </div>
       </div>
     </button>
   );
 }
+

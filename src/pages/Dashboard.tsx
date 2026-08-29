@@ -14,6 +14,7 @@ import InquiriesSection      from "./dashboard/sections/InquiriesSection";
 import IntakeSection         from "./dashboard/sections/IntakeSection";
 import AppointmentsSection   from "./dashboard/sections/AppointmentsSection";
 import AnalyticsSection      from "./dashboard/sections/AnalyticsSection";
+import GallerySection        from "./dashboard/sections/GallerySection";
 import ChatModal             from "./dashboard/modals/ChatModal";
 import InquiryModal          from "./dashboard/modals/InquiryModal";
 import ApplicantModal        from "./dashboard/modals/ApplicantModal";
@@ -46,6 +47,7 @@ export default function Dashboard() {
           headerLabel={db.headerLabel}
           intakeFlow={db.intakeFlow}
           appointmentsFlow={db.appointmentsFlow}
+          galleryFlow={db.galleryFlow}
           conversations={db.conversations}
           viewConversation={db.viewConversation}
           handleLogout={db.handleLogout}
@@ -105,6 +107,16 @@ export default function Dashboard() {
               appointments={db.appointments}
               appointmentsLoading={db.appointmentsLoading}
               setAppointmentModal={db.setAppointmentModal}
+            />
+          )}
+
+          {db.section === "gallery" && db.galleryFlow?.enabled && (
+            <GallerySection
+              images={db.galleryImages}
+              loading={db.galleryLoading}
+              uploading={db.galleryUploading}
+              uploadGalleryImage={db.uploadGalleryImage}
+              deleteGalleryImage={db.deleteGalleryImage}
             />
           )}
 

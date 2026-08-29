@@ -64,6 +64,17 @@ export interface IntakeSession {
   updatedAt?: { _seconds: number };
 }
 
+// ─── Gallery ──────────────────────────────────────────────────────────────────
+
+export interface GalleryImage {
+  slug: string;
+  label: string;
+  url: string;
+  r2Key: string;
+  mimeType: string;
+  uploadedAt: string;
+}
+
 // ─── Appointments ─────────────────────────────────────────────────────────────
 
 export type AppointmentStatus = "pending" | "confirmed" | "cancelled";
@@ -107,6 +118,11 @@ export interface BrandingConfig {
     entityLabel: string;
     fieldLabels: Record<string, string>;
   } | null;
+  galleryFlow?: {
+    enabled: boolean;
+    tabLabel: string;
+    tabIcon: string;
+  } | null;
 }
 
 export type Section =
@@ -115,4 +131,5 @@ export type Section =
   | "inquiries"
   | "intake"
   | "appointments"
-  | "analytics";
+  | "analytics"
+  | "gallery";
