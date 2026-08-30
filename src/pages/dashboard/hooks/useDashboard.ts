@@ -16,6 +16,7 @@ import {
   IntakeSession,
   Message,
   Section,
+  Service,
   Stats,
   Takeover,
   WaStatus,
@@ -37,6 +38,7 @@ export function useDashboard() {
   const [intakeFlow, setIntakeFlow] = useState<BrandingConfig["intakeFlow"]>(null);
   const [appointmentsFlow, setAppointmentsFlow] = useState<BrandingConfig["appointmentsFlow"]>(null);
   const [galleryFlow, setGalleryFlow] = useState<BrandingConfig["galleryFlow"]>(null);
+  const [servicesFlow, setServicesFlow] = useState<BrandingConfig["servicesFlow"]>(null);
 
   // ── PWA ─────────────────────────────────────────────────────────────────────
   // We no longer swap the manifest — one shared origin = one PWA ("Nova").
@@ -72,6 +74,11 @@ export function useDashboard() {
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [galleryLoading, setGalleryLoading] = useState(false);
   const [galleryUploading, setGalleryUploading] = useState(false);
+
+  // ── Services ─────────────────────────────────────────────────────────────────
+  const [services, setServices] = useState<Service[]>([]);
+  const [servicesLoading, setServicesLoading] = useState(false);
+  const [servicesSaving, setServicesSaving] = useState(false);
 
   // ── Chat modal ──────────────────────────────────────────────────────────────
   const [chatOpen, setChatOpen] = useState(false);
@@ -110,6 +117,7 @@ export function useDashboard() {
     if (section === "intake")        loadAdmissions();
     if (section === "appointments")  loadAppointments();
     if (section === "gallery")       loadGallery();
+    if (section === "services")      loadServices();
   }, [section]);
 
   useEffect(() => {
@@ -148,6 +156,7 @@ export function useDashboard() {
       if (cfg.intakeFlow)        setIntakeFlow(cfg.intakeFlow);
       if (cfg.appointmentsFlow)  setAppointmentsFlow(cfg.appointmentsFlow);
       if (cfg.galleryFlow)       setGalleryFlow(cfg.galleryFlow);
+      if (cfg.servicesFlow)      setServicesFlow(cfg.servicesFlow);
       if (cfg.dashboard.title)       document.title = cfg.dashboard.title;
       if (cfg.dashboard.headerLabel) setHeaderLabel(cfg.dashboard.headerLabel);
       if (cfg.dashboard.colors) {
@@ -293,13 +302,80 @@ export function useDashboard() {
   async function deleteGalleryImage(slug: string) {
     try {
       const res = await apiFetch(`${API_BASE}/api/gallery/${slug}`, { method: "DELETE" });
-      if (!res.ok) {
-        alert("Could not delete image — please try again.");
-        return;
-      }
+      if (!res.ok) { alert("Could not delete image — please try again."); return; }
       setGalleryImages((prev) => prev.filter((i) => i.slug !== slug));
     } catch {
       alert("Could not delete image — please try again.");
+    }
+  }
+
+  // ── Services ─────────────────────────────────────────────────────────────────
+
+  async function loadServices() {
+    setServicesLoading(true);
+    try {
+      const res  = await apiFetch(`${API_BASE}/api/services`);
+      const data = await res.json();
+      setServices(data.services || []);
+    } catch {
+      setServices([]);
+    } finally {
+      setServicesLoading(false);
+    }
+  }
+
+  async function upsertService(service: Service) {
+    setServicesSaving(true);
+    try {
+      const res = await apiFetch(`${API_BASE}/api/services`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(service),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Save failed" }));
+        alert(err.error || "Could not save service — please try again.");
+        return;
+      }
+      const data = await res.json();
+      // Replace in list if exists, otherwise prepend
+      setServices((prev) => {
+        const exists = prev.some((s) => s.id === data.service.id);
+        if (exists) return prev.map((s) => s.id === data.service.id ? data.service : s);
+        return [data.service, ...prev];
+      });
+    } catch {
+      alert("Could not save service — please check your connection.");
+    } finally {
+      setServicesSaving(false);
+    }
+  }
+
+  async function deleteService(serviceId: string) {
+    try {
+      const res = await apiFetch(`${API_BASE}/api/services/${serviceId}`, { method: "DELETE" });
+      if (!res.ok) { alert("Could not delete service — please try again."); return; }
+      setServices((prev) => prev.filter((s) => s.id !== serviceId));
+    } catch {
+      alert("Could not delete service — please try again.");
+    }
+  }
+
+  async function toggleServiceAvailable(service: Service) {
+    const updated = { ...service, available: !service.available };
+    // Optimistic update
+    setServices((prev) => prev.map((s) => s.id === service.id ? updated : s));
+    try {
+      const res = await apiFetch(`${API_BASE}/api/services`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updated),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      // Revert on failure
+      setServices((prev) => prev.map((s) => s.id === service.id ? service : s));
+      alert("Could not update service — please try again.");
     }
   }
 
@@ -477,7 +553,7 @@ export function useDashboard() {
     mobileOpen, setMobileOpen,
     appReady,
     // Branding
-    headerLabel, contactLabel, categoryLabels, intakeFlow, appointmentsFlow,
+    headerLabel, contactLabel, categoryLabels, intakeFlow, appointmentsFlow, galleryFlow, servicesFlow,
     // PWA
     showInstallBanner,
     // Overview
@@ -496,9 +572,11 @@ export function useDashboard() {
     updateAppointmentStatus,
     appointmentFieldLabel,
     // Gallery
-    galleryFlow,
     galleryImages, galleryLoading, galleryUploading,
     uploadGalleryImage, deleteGalleryImage,
+    // Services
+    services, servicesLoading, servicesSaving,
+    upsertService, deleteService, toggleServiceAvailable,
     // Chat modal
     chatOpen, setChatOpen,
     chatPhone, chatName,

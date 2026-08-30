@@ -75,6 +75,24 @@ export interface GalleryImage {
   uploadedAt: string;
 }
 
+// ─── Services ─────────────────────────────────────────────────────────────────
+
+export interface ServiceVariant {
+  label: string;   // empty string = single-price, no sub-option label shown
+  price: number;   // KES
+}
+
+export interface Service {
+  id:             string;   // slug, e.g. "knotless_braids" — Firestore doc ID
+  name:           string;   // display name, e.g. "Knotless Braids"
+  category:       string;   // e.g. "hair_services"
+  variants:       ServiceVariant[];
+  priceOnRequest: boolean;  // true = "price on consultation", no variants shown
+  available:      boolean;  // false = hidden from AI context
+  sortOrder:      number;
+  updatedAt?:     string;
+}
+
 // ─── Appointments ─────────────────────────────────────────────────────────────
 
 export type AppointmentStatus = "pending" | "confirmed" | "cancelled";
@@ -123,6 +141,11 @@ export interface BrandingConfig {
     tabLabel: string;
     tabIcon: string;
   } | null;
+  servicesFlow?: {
+    enabled: boolean;
+    tabLabel: string;
+    tabIcon: string;
+  } | null;
 }
 
 export type Section =
@@ -132,4 +155,5 @@ export type Section =
   | "intake"
   | "appointments"
   | "analytics"
-  | "gallery";
+  | "gallery"
+  | "services";

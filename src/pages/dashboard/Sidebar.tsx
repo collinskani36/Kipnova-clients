@@ -15,6 +15,7 @@ interface Props {
   intakeFlow: BrandingConfig["intakeFlow"];
   appointmentsFlow: BrandingConfig["appointmentsFlow"];
   galleryFlow: BrandingConfig["galleryFlow"];
+  servicesFlow: BrandingConfig["servicesFlow"];
   conversations: Conversation[];
   viewConversation: (phone: string, name: string) => void;
   handleLogout: () => void;
@@ -24,7 +25,7 @@ export default function Sidebar({
   section, setSection,
   sidebarCollapsed, setSidebarCollapsed,
   mobileOpen, setMobileOpen,
-  headerLabel, intakeFlow, appointmentsFlow, galleryFlow,
+  headerLabel, intakeFlow, appointmentsFlow, galleryFlow, servicesFlow,
   conversations, viewConversation,
   handleLogout,
 }: Props) {
@@ -95,6 +96,18 @@ export default function Sidebar({
           </li>
         )}
 
+        {/* Services — any client with a service menu + live pricing */}
+        {servicesFlow?.enabled && (
+          <li
+            className={`nav-item${section === "services" ? " active" : ""}`}
+            onClick={() => { setSection("services"); setMobileOpen(false); }}
+            title={sidebarCollapsed ? servicesFlow.tabLabel : undefined}
+          >
+            <span className="nav-icon">{servicesFlow.tabIcon}</span>
+            <span className="nav-label">{servicesFlow.tabLabel}</span>
+          </li>
+        )}
+
         <li
           className={`nav-item${section === "analytics" ? " active" : ""}`}
           onClick={() => { setSection("analytics"); setMobileOpen(false); }}
@@ -150,4 +163,3 @@ export default function Sidebar({
     </aside>
   );
 }
-

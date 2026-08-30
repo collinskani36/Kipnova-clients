@@ -15,6 +15,7 @@ import IntakeSection         from "./dashboard/sections/IntakeSection";
 import AppointmentsSection   from "./dashboard/sections/AppointmentsSection";
 import AnalyticsSection      from "./dashboard/sections/AnalyticsSection";
 import GallerySection        from "./dashboard/sections/GallerySection";
+import ServicesSection       from "./dashboard/sections/ServicesSection";
 import ChatModal             from "./dashboard/modals/ChatModal";
 import InquiryModal          from "./dashboard/modals/InquiryModal";
 import ApplicantModal        from "./dashboard/modals/ApplicantModal";
@@ -48,6 +49,7 @@ export default function Dashboard() {
           intakeFlow={db.intakeFlow}
           appointmentsFlow={db.appointmentsFlow}
           galleryFlow={db.galleryFlow}
+          servicesFlow={db.servicesFlow}
           conversations={db.conversations}
           viewConversation={db.viewConversation}
           handleLogout={db.handleLogout}
@@ -117,6 +119,17 @@ export default function Dashboard() {
               uploading={db.galleryUploading}
               uploadGalleryImage={db.uploadGalleryImage}
               deleteGalleryImage={db.deleteGalleryImage}
+            />
+          )}
+
+          {db.section === "services" && db.servicesFlow?.enabled && (
+            <ServicesSection
+              services={db.services}
+              loading={db.servicesLoading}
+              saving={db.servicesSaving}
+              upsertService={db.upsertService}
+              deleteService={db.deleteService}
+              toggleAvailable={db.toggleServiceAvailable}
             />
           )}
 
